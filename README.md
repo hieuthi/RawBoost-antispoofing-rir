@@ -1,4 +1,24 @@
-RawBoost: A Raw Data Boosting and Augmentation Method applied to Automatic Speaker Verification Anti-Spoofing
+# Modified
+
+### Training with RIRs
+To train the model with augmented RIRs run:
+```
+python main_reverb.py --track=LA --loss=WCE   --lr=0.0001 --batch_size=128 --rirscp RIRs/rir-syn-train.scp --probability 0.99 --name_tag '_reverb_syn_0.99'
+```
+
+### Testing with reverberant speech
+To test with reverberant fake speech simply put the flac files in C1R1.tgz or C1R2.tgz to `ASVspoof2021_DF_eval/flac`.
+
+Then you can testing DF set as usual
+
+```
+python main_reverb.py --track=DF --loss=WCE --is_eval --eval --model_path='/path/to/your/best_model.pth' --eval_output='eval_CM_scores_file.txt'
+```
+
+
+
+
+# RawBoost: A Raw Data Boosting and Augmentation Method applied to Automatic Speaker Verification Anti-Spoofing
 ===============
 This repository contains our implementation of the paper, "RawBoost: A Raw Data Boosting and Augmentation Method applied to Automatic Speaker Verification Anti-Spoofing". This work introduce RawBoost, a data boosting and augmentation method for the design of more reliable spoofing detection solutions which operate directly upon raw waveform inputs ([Paper link here](https://arxiv.org/pdf/2111.04433.pdf)).
 

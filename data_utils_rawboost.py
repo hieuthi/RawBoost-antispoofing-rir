@@ -12,6 +12,8 @@ from RawBoost import ISD_additive_noise,LnL_convolutive_noise,SSI_additive_noise
 ___author__ = "Hemlata Tak, Massimiliano Todisco"
 __email__ = "{tak,todisco}@eurecom.fr"
 
+from signal_processing import reverberate
+import random
 
 #--------------RawBoost data augmentation algorithms---------------------------##
 
@@ -169,3 +171,56 @@ class Dataset_ASVspoof2021_eval(Dataset):
             return x_inp,key           
 
 
+
+class ScpDataset(Dataset):
+  def __init__(self, scpfile):
+    self.scpfile   = scpfile
+    self.filenames = []
+    with open(scpfile, 'r') as f:
+        for line in f:
+            line = line.strip()
+            self.filenames.append(line)
+
+  def __len__(self):
+    return len(self.filenames)
+
+  def __getitem__(self, index):
+    x, fs = librosa.load(self.filenames[index])
+
+    return torch.LongTensor(x)
+
+
+class Dataset_ASVspoof2019_reverb(Dataset):
+    def __init__(self, args, list_IDs, labels, base_dir, algo, rirscp=None, probability=0.0):
+        self.list_IDs = list_IDs
+        self.labels = labels
+        self.base_dir = base_dir
+        self.algo=algo
+        self.args=args
+        self.cut=64600
+        if rirscp is None:
+            self.rirdataset = None
+        else:
+            self.rirdataset = ScpDataset(rirscp)
+            print(f"Load {len(self.rirdataset)} RIRs from {rirscp} with a probability of {probability}")
+        self.probability = probability
+
+    def __len__(self):
+        return len(self.list_IDs)
+
+    def __getitem__(self, index):
+        utt_id = self.list_IDs[index]
+        target = self.labels[utt_id]
+        X, fs = librosa.load(self.base_dir+'flac/'+utt_id+'.flac', sr=16000) 
+
+        if random.uniform(0,1) > self.probability:
+            rir = self.rirdataset[random.randint(0,len(self.rirdataset)-1)]
+            X = reverberate(torch.LongTensor(X), rir, 'peak')
+            X = X.numpy()
+        X = X * random.uniform(0.4,1)
+
+        Y=process_Rawboost_feature(X, fs, self.args, self.algo)
+        X_pad= pad(Y, self.cut)
+        x_inp= Tensor(X_pad)
+        
+        return x_inp, target
